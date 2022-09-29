@@ -1,0 +1,22 @@
+*** /boot/develop/headers/be/interface/Font.h	Fri Apr 13 15:29:25 2001
+--- /boot/develop/tools/gnupro/i586-pc-beos/include/Font.h	Fri Apr 13 15:31:57 2001
+***************
+*** 19,26 ****
+  /*----------------------------------------------------------------*/
+  /*----- BFont defines and structures -----------------------------*/
+  
+! #  define B_FONT_FAMILY_LENGTH 63
+! #  define B_FONT_STYLE_LENGTH 63
+  #if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 95)
+  typedef char font_family[B_FONT_FAMILY_LENGTH + 2];
+  typedef char font_style[B_FONT_STYLE_LENGTH + 2];
+--- 19,27 ----
+  /*----------------------------------------------------------------*/
+  /*----- BFont defines and structures -----------------------------*/
+  
+! #define B_FONT_FAMILY_LENGTH 63
+! #define B_FONT_STYLE_LENGTH 63
+! 
+  #if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 95)
+  typedef char font_family[B_FONT_FAMILY_LENGTH + 2];
+  typedef char font_style[B_FONT_STYLE_LENGTH + 2];

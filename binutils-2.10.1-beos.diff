@@ -1,0 +1,178 @@
+diff -cNr binutils-2.10.1/bfd/elf32-i386.c binutils-2.10.1-beos/bfd/elf32-i386.c
+*** binutils-2.10.1/bfd/elf32-i386.c	Mon Oct 23 00:19:57 2000
+--- binutils-2.10.1-beos/bfd/elf32-i386.c	Sat Apr  7 03:13:29 2001
+***************
+*** 1325,1331 ****
+  		     (info, h->root.root.string, input_bfd,
+  		      input_section, rel->r_offset,
+  		      (!info->shared || info->no_undefined
+! 		       || ELF_ST_VISIBILITY (h->other)))))
+  		return false;
+  	      relocation = 0;
+  	    }
+--- 1325,1331 ----
+  		     (info, h->root.root.string, input_bfd,
+  		      input_section, rel->r_offset,
+  		      (!info->shared || info->no_undefined
+! 		       || ELF_ST_VISIBILITY (h->other) == STV_DEFAULT))))
+  		return false;
+  	      relocation = 0;
+  	    }
+diff -cNr binutils-2.10.1/bfd/libbfd.c binutils-2.10.1-beos/bfd/libbfd.c
+*** binutils-2.10.1/bfd/libbfd.c	Mon Feb 21 21:01:25 2000
+--- binutils-2.10.1-beos/bfd/libbfd.c	Sat Apr  7 00:20:59 2001
+***************
+*** 738,743 ****
+--- 738,788 ----
+    if (direction == SEEK_SET && abfd->my_archive != NULL)
+      file_position += abfd->origin;
+  
++ #if defined __BEOS__
++   {
++     file_ptr eof;
++     file_ptr pos;
++ 
++     pos = ftell (f);
++     fseek (f, 0L, SEEK_END);
++     eof = ftell (f);
++ 
++     if (direction == SEEK_CUR)
++       {
++       direction = SEEK_SET;
++       file_position += pos;
++       }
++   
++     /* When extending a file beyond its original length the fseek() function
++        under BeOS does not initialise the new space to zero.  This means that
++        random garbage can be picked up, which in turn means that two identical+        files assembled and linked in the same way can nevertheless still fail
++        a binary compare.  We fix this here by explicitly initialising the
++        extra space.  */
++     if (eof < file_position)
++       {
++       file_ptr diff;
++       static char zeros[512];
++       
++       diff = file_position - eof;
++ 
++       while (diff >= sizeof (zeros))
++         {
++           fwrite (zeros, sizeof (zeros), 1, f);
++           diff -= sizeof (zeros);
++         }
++       
++       if (diff > 0)
++         fwrite (zeros, diff, 1, f);
++       
++       /* In theory we do not need to perform the fseek now, since the fwrite
++          calls will have moved the file pointer to the correct location.  In
++          practice however we leave the call in, just in case something went
++          wrong with the fwrites and we missed it.  (After all we are not
++          checking their return codes).  */
++       }
++   }
++ #endif
++ 
+    result = fseek (f, file_position, direction);
+  
+    if (result != 0)
+diff -cNr binutils-2.10.1/binutils/dlltool.c binutils-2.10.1-beos/binutils/dlltool.c
+*** binutils-2.10.1/binutils/dlltool.c	Fri Apr  7 13:39:24 2000
+--- binutils-2.10.1-beos/binutils/dlltool.c	Sat Apr  7 00:22:23 2001
+***************
+*** 382,387 ****
+--- 382,391 ----
+  static FILE *output_def;
+  static FILE *base_file;
+  
++ #ifdef DLLTOOL_BEOS
++ static const char *mname = "beos";
++ #endif
++ 
+  #ifdef DLLTOOL_ARM
+  static const char *mname = "arm";
+  #endif
+diff -cNr binutils-2.10.1/ld/ld.h binutils-2.10.1-beos/ld/ld.h
+*** binutils-2.10.1/ld/ld.h	Sat Apr 29 10:45:49 2000
+--- binutils-2.10.1-beos/ld/ld.h	Sat Apr  7 00:58:08 2001
+***************
+*** 156,162 ****
+    /* If true (the default) check section addresses, once compute,
+       fpor overlaps.  */
+    boolean check_section_addresses;
+!   
+  } args_type;
+  
+  extern args_type command_line;
+--- 156,165 ----
+    /* If true (the default) check section addresses, once compute,
+       fpor overlaps.  */
+    boolean check_section_addresses;
+! 
+!   /* If true, simply ignore undefined symbols. */
+!   boolean ignore_undefined;
+!  
+  } args_type;
+  
+  extern args_type command_line;
+diff -cNr binutils-2.10.1/ld/ldmain.c binutils-2.10.1-beos/ld/ldmain.c
+*** binutils-2.10.1/ld/ldmain.c	Sun May 28 19:57:51 2000
+--- binutils-2.10.1-beos/ld/ldmain.c	Sat Apr  7 02:49:26 2001
+***************
+*** 205,210 ****
+--- 205,211 ----
+    command_line.rpath = NULL;
+    command_line.warn_mismatch = true;
+    command_line.check_section_addresses = true;
++   command_line.ignore_undefined = false;
+  
+    /* We initialize DEMANGLING based on the environment variable
+       COLLECT_NO_DEMANGLE.  The gcc collect2 program will demangle the
+***************
+*** 1165,1170 ****
+--- 1166,1175 ----
+    static unsigned int error_count;
+  
+  #define MAX_ERRORS_IN_A_ROW 5
++ 
++   /* Explicitly ignore undefined symbols? */
++   if (command_line.ignore_undefined)
++     return true;
+  
+    if (config.warn_once)
+      {
+diff -cNr binutils-2.10.1/ld/lexsup.c binutils-2.10.1-beos/ld/lexsup.c
+*** binutils-2.10.1/ld/lexsup.c	Mon May 15 11:21:03 2000
+--- binutils-2.10.1-beos/ld/lexsup.c	Sat Apr  7 01:12:23 2001
+***************
+*** 123,128 ****
+--- 123,129 ----
+  #define OPTION_NO_UNDEFINED		(OPTION_MPC860C0 + 1)
+  #define OPTION_INIT                     (OPTION_NO_UNDEFINED + 1)
+  #define OPTION_FINI                     (OPTION_INIT + 1)
++ #define OPTION_IGNORE_UNDEFINED         (OPTION_FINI + 1)
+  
+  /* The long options.  This structure is used for both the option
+     parsing and the help text.  */
+***************
+*** 285,290 ****
+--- 286,293 ----
+        TWO_DASHES },
+    { {"help", no_argument, NULL, OPTION_HELP},
+        '\0', NULL, N_("Print option help"), TWO_DASHES },
++   { {"ignore-undefined", no_argument, NULL, OPTION_IGNORE_UNDEFINED },
++       '\0', NULL, N_("Ignore undefined symbols"), TWO_DASHES },
+    { {"init", required_argument, NULL, OPTION_INIT},
+       '\0', N_("SYMBOL"), N_("Call SYMBOL at load-time"), ONE_DASH },
+    { {"Map", required_argument, NULL, OPTION_MAP},
+***************
+*** 653,658 ****
+--- 656,664 ----
+  	case OPTION_HELP:
+  	  help ();
+  	  xexit (0);
++ 	  break;
++ 	case OPTION_IGNORE_UNDEFINED:
++ 	  command_line.ignore_undefined = true;
+  	  break;
+  	case 'L':
+  	  ldfile_add_library_path (optarg, true);

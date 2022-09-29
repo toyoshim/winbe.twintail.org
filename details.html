@@ -1,0 +1,50 @@
+<html lang="ja">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS" />
+<title>ウィンビー国際的アイドル化計画</title>
+</head>
+<body bgcolor="#ffffff">
+<div align="center">
+<font color="#4444ff" size="-1">Project - International Idol `WinBe'</font>
+<h1><font color="#ff0088">ウィンビー国際的アイドル化計画</font></h1>
+</div>
+<hr>
+<h2><font color="#4444ff">What's this?</font></h2>
+<p>This is a Project which allow us to execute Windows application on BeOS.
+The implementation is like WINE.
+So we should not call it emulator but environment for execution.
+It consists of win32_server and libld_dll.so.
+<h2><font color="#4444ff">Purpose</font></h2>
+<p>BeOS is a great OS.
+But its community is too small to develop a lot of trivial applications.
+If this project make it possible that we can use Windows applications on BeOS,
+we can use our precious time to develop a true native application.
+Yes, I mean the application that use the great MediaKit.
+Someone may say this project will reduce BeOS developer.
+Hey!! Is BeOS so poor OS?
+Do you want to develop the application that you can on Windows?
+<p>And your application will be able to load Windows' DLLs like add-ons via libld_dll.so.
+So you can use Windows' codecs or libraries.
+<h2><font color="#4444ff">Technical problems</font></h2>
+<p>I should implement BeOS version of KERNEL32.dll, USER32.dll, GDI32.dll, etc...
+There are thousands of API.
+So it's difficult to run complex applications like Office.
+But this problem will be resolved with time.
+<p>Another problem is serious.
+Recent Windows' applications don't have base relocation table.
+They are stripped at link stage.
+You know Windows' standard applications request map themselves to 0x00400000.
+But on BeOS, these area is allocated for kernel heap.
+So we can not use this address.
+I develop dynamic relocation technique.
+Now this technique lead to good result, but is not perfect.
+<h2><font color="#4444ff">Status</font></h2>
+Now, some games work well.
+And a lot of DLLs, which don't need GUI, is available.
+<hr>
+<div align="center">
+<font color="#448844">[[<a href="/">Top</a>]]</font>
+</div>
+<div align="right">$Id: details.html,v 1.3 2001/03/20 16:38:01 toyoshim Exp $</div>
+</body>
+</html>
